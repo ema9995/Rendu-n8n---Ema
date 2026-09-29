@@ -1,0 +1,18 @@
+# n8ncli ignored files
+.env
+n8n/config/sync-state.json
+n8n/config/unconfigured-credentials.json
+n8n/config/workflow-folders.json
+n8n/references/
+
+# Local cache of pulled workflows, machine-specific
+n8n/config/cache/
+
+# Node
+node_modules/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
