@@ -2,10 +2,11 @@
 name: hostile-review
 version: 1.0.0
 description: |
-  Adversarially review your own completed work before handing it over. Assume the
-  solution is wrong until proven otherwise, actively hunt for bugs, edge cases,
-  and missed requirements, verify claims by running things, then fix what you
-  find. Use after a first solution exists.
+  Revoir son propre travail de façon adversariale avant de le livrer. Présumer que
+  la solution est fausse jusqu'à preuve du contraire, chercher activement bugs,
+  cas limites et exigences manquées, vérifier les affirmations en exécutant de
+  vraies commandes, puis corriger ce qui est trouvé. À utiliser après une première
+  solution.
 license: ISC
 compatibility: claude-code opencode
 allowed-tools:
@@ -20,156 +21,168 @@ allowed-tools:
   - AskUserQuestion
 ---
 
-# Skill: Hostile Review
+# Skill : Revue hostile
 
-This skill runs **after** a solution has been produced. Your job now is to treat
-your own work as suspect.
+Cette skill s'exécute **après** qu'une solution a été produite. Ton rôle est
+désormais de traiter ton propre travail comme suspect.
 
-The default state after building something is a sense of completion. That feeling
-is evidence of nothing. It is what you feel after writing code that compiles,
-not after writing code that is correct. This skill exists to replace that feeling
-with actual evidence.
+L'état par défaut après avoir construit quelque chose est un sentiment
+d'achèvement. Ce sentiment ne prouve rien. C'est ce que tu ressens après avoir
+écrit du code qui compile, pas après avoir écrit du code correct. Cette skill
+existe pour remplacer ce sentiment par des preuves réelles.
 
-## The stance
+## La posture
 
-One question drives the whole review:
+Une seule question dirige toute la revue :
 
-> **"What could be wrong in what I just did?"**
+> **« Qu'est-ce qui pourrait être faux dans ce que je viens de faire ? »**
 
-Not "is this good" and not "is this complete enough for the request". Those invite
-you to grade your work. This question assumes there is a defect and asks you to
-find it. Most of the time there is one. Sometimes the one you find is a real
-problem you would have shipped.
+Pas « est-ce bon » ni « est-ce suffisant pour la demande ». Ces formulations
+t'invitent à noter ton travail. Celle-ci présume qu'il y a un défaut et te demande
+de le trouver. La plupart du temps il y en a un. Parfois celui que tu trouves est
+un vrai problème que tu aurais livré.
 
-A useful reframe: if a stranger submitted this solution and you were reviewing
-it before deploying, what would you check? Do that.
+Un cadrage utile : si un inconnu soumettait cette solution et que tu la
+révisais avant déploiement, que vérifierais-tu ? Fais cela.
 
-## What to attack, in order of yield
+## Attaquer, par ordre de rendement
 
-### 1. Requirements, not code
+### 1. Les exigences, pas le code
 
-Re-read the original request, word for word, then your work, and check it against
-them point by point.
+Relis la demande initiale mot pour mot, puis ton travail, et confronte-les point
+par point.
 
-The most common real defect in a first solution is not a bug. It is a **silent
-mismatch with the request**, where you built something adjacent to what was asked
-and never noticed. Build the checklist from their words, not from your intent,
-because your intent is what you are trying to confirm.
+Le vrai défaut le plus fréquent d'une première solution n'est pas un bug. C'est un
+**écart silencieux avec la demande**, où tu as construit quelque chose de voisin
+de ce qui était demandé sans le remarquer. Construis la checklist à partir de ses
+mots, pas de ton intention, car ton intention est précisément ce que tu essaies de
+confirmer.
 
-Look especially for:
+Cherche en particulier :
 
-- a requirement you satisfied in letter but not in substance;
-- a constraint you silently dropped as inconvenient;
-- scope you expanded, or narrowed, without saying so;
-- an assumption you made that they never agreed to.
+- une exigence satisfaite en lettre mais pas en substance ;
+- une contrainte écartée en silence parce que gênante ;
+- un périmètre étendu ou réduit, sans que tu le signales ;
+- une hypothèse posée et jamais validée par l'utilisateur.
 
-### 2. Claims you made but did not verify
+### 2. Les affirmations faites mais non vérifiées
 
-Go back through everything you asserted and check which ones you actually
-tested. The dangerous sentences are the confident ones: "this works", "this
-handles the empty case", "this is backwards compatible".
+Reprends tout ce que tu as affirmé et vérifie lesquelles tu as réellement
+testées. Les phrases dangereuses sont les plus assurées : « ça fonctionne », « ça
+gère le cas vide », « c'est rétrocompatible ».
 
-For each, either verify it now, or downgrade it to what you actually know. A
-review that leaves an unverified claim stated as fact has made the situation
-worse, not better.
+Pour chacune, vérifie-la maintenant, ou ramène-la à ce que tu sais réellement. Une
+revue qui laisse une affirmation non vérifiée énoncée comme un fait a aggravé la
+situation au lieu de l'améliorer.
 
-### 3. Edge cases and boundaries
+### 3. Cas limites et frontières
 
-For each input, each branch, each external call:
+Pour chaque entrée, chaque branche, chaque appel externe :
 
-- What happens on empty, null, undefined, zero, negative?
-- What if the list is one element, or enormous?
-- What if the external call is slow, times out, returns malformed data, or
-  returns 200 with an error body?
-- What if two things run concurrently and touch the same state?
-- What if this runs twice? Is it idempotent?
-- First element, last element, boundary values, the value just past a threshold.
-- Unicode, accents, very long strings, special characters.
-- What if the user closes the tab, or the process dies halfway?
+- Que se passe-t-il sur vide, null, undefined, zéro, négatif ?
+- Et si la liste a un élément, ou est énorme ?
+- Et si l'appel externe est lent, expire, renvoie des données malformées, ou
+  renvoie 200 avec un corps d'erreur ?
+- Et si deux choses s'exécutent en même temps et touchent le même état ?
+- Et si ceci s'exécute deux fois ? Est-ce idempotent ?
+- Premier élément, dernier élément, valeurs de frontière, la valeur juste après
+  un seuil.
+- Unicode, accents, chaînes très longues, caractères spéciaux.
+- Que se passe-t-il si l'utilisateur ferme l'onglet, ou si le processus meurt à
+  mi-parcours ?
 
-Write a list of these and actually test them. A test that throws is a bug that
-found itself.
+Écris cette liste et teste-la vraiment. Un test qui plante est un bug qui s'est
+trouvé tout seul.
 
-### 4. Logic and reasoning
+### 4. Logique et raisonnement
 
-Re-derive the important logic by hand, independently of how you wrote it. If you
-read your own code and nod along, you inherit its mistake, because you wrote it
-for the same reason you believe it.
+Redérive la logique importante à la main, indépendamment de la façon dont tu l'as
+écrite. Si tu relis ton propre code en hochant la tête, tu en hérites l'erreur,
+puisque tu l'as écrit pour la même raison que tu y crois.
 
-Check specifically:
+Vérifie spécifiquement :
 
-- Off-by-one at every boundary.
-- Inverted conditions. A branch that never executes usually means a logic error.
-- Conditions that can never be true, or always true. Search for these directly.
-- Arithmetic and unit conversions, and rounding at each step.
-- Ordering dependencies that are not enforced.
-- Error paths. Does the failure case actually do the right thing, or merely
-  avoid crashing?
+- Les décalages d'un cran à chaque frontière.
+- Les conditions inversées. Une branche qui ne s'exécute jamais signale
+  généralement une erreur de logique.
+- Les conditions impossibles à vrai, ou toujours vraies. Cherche-les directement.
+- Arithmétique, conversions d'unités, et arrondis à chaque étape.
+- Dépendances à l'ordre qui ne sont pas imposées.
+- Chemins d'erreur. Le cas d'échec fait-il vraiment la bonne chose, ou se
+  contente-t-il d'éviter de planter ?
 
-### 5. Effects and regressions
+### 5. Effets de bord et régressions
 
-- What else uses what you changed? Search for callers before you change a
-  signature or a return type.
-- What did you change that nothing tests?
-- Did you modify a shared file whose other users you did not check?
-- What config, cache, or generated file is now stale?
-- What still depends on the old behaviour?
+- Qui d'autre utilise ce que tu as changé ? Cherche les appelants avant de
+  modifier une signature ou un type de retour.
+- Qu'as-tu changé que rien ne teste ?
+- As-tu touché un fichier partagé dont tu n'as pas vérifié les autres usages ?
+- Quelle config, quel cache, quel fichier généré est maintenant périmé ?
+- Que dépend encore de l'ancien comportement ?
 
-### 6. Your technical choices
+### 6. Tes choix techniques
 
-Justify the decisions again, now that you have the implementation. Alternatives
-worth revisiting: does the codebase already have a utility for this? Is there a
-standard library call you hand-rolled? Is the abstraction earning its
-complexity? Is there a simpler version that meets the actual need?
+Justifie les décisions à nouveau, maintenant que tu as l'implémentation. Les
+alternatives qui méritent d'être réexaminées : le dépôt a-t-il déjà un utilitaire
+pour cela ? Y a-t-il un appel de bibliothèque standard que tu as réécrit à la
+main ? L'abstraction justifie-t-elle sa complexité ? Existe-t-il une version plus
+simple qui répond au besoin réel ?
 
-## How to test
+## Comment tester
 
-Running things beats reasoning about things.
+Exécuter bat raisonner.
 
-- Run the tests, and read the failures you were expecting to ignore.
-- Write a test for the case you were unsure about. The fact that you were unsure
-  is the reason to write it.
-- Try to construct an input that produces a wrong answer. If you cannot think of
-  one, you are not trying hard enough, not that the code is safe.
-- Check the boundaries of every range you wrote.
-- Actually run the thing where that is possible. A command you did not execute is
-  a hypothesis.
+- Lance les tests, et lis les échecs que tu comptais ignorer.
+- Écris un test pour le cas qui t'incertainait. C'est précisément parce que tu
+  étais incertain qu'il faut l'écrire.
+- Cherche à construire une entrée qui produit une mauvaise réponse. Si tu n'en
+  trouves pas, ce n'est pas que le code est sûr, c'est que tu n'as pas assez
+  cherché.
+- Vérifie les frontières de chaque intervalle écrit.
+- Exécute réellement la chose quand c'est possible. Une commande que tu n'as pas
+  lancée est une hypothèse.
 
-## When you find problems
+## Quand tu trouves des problèmes
 
-Fix them. Then re-examine the fix, because fixes introduce new code and new
-assumptions. A patch that silently widens scope is a second defect.
+Corrige-les. Puis réexamine la correction, parce qu'une correction introduit du
+nouveau code et de nouvelles hypothèses. Un patch qui élargit le périmètre en
+silence est un second défaut.
 
-Say plainly what you found and what you changed. Do not quietly patch and present
-the result as though it were right the first time. The user needs to know which
-parts are solid and which were wrong, because that is what determines how much
-the result should be trusted.
+Dis clairement ce que tu as trouvé et ce que tu as changé. Ne corrige pas en
+silence et ne présente pas le résultat comme s'il avait été juste du premier coup.
+L'utilisateur a besoin de savoir quelles parties sont solides et lesquelles
+étaient fausses, car c'est ce qui détermine combien il faut faire confiance au
+résultat.
 
-If you find a problem you cannot fix, say so. An unfixable issue the user knows
-about is far better than a clean-looking delivery that hides one.
+Si tu trouves un problème que tu ne peux pas corriger, dis-le. Un problème
+incorrectable que l'utilisateur connaît vaut bien mieux qu'une livraison
+d'apparence propre qui en cache un.
 
-## Errors to avoid
+## Erreurs à éviter
 
-- **Reviewing to confirm rather than to find.** Reading your own work looking
-  for permission is the most common way this skill turns into theatre.
-- **Stopping at the first pass.** The second pass finds things the first one did
-  not, because the first pass is still confirming.
-- **Only testing the happy path.** It is the path you already believe works.
-- **Treating a passing test as proof.** A test proves one case, and usually the
-  one you thought of when writing it.
-- **Rewriting instead of checking.** Wholesale rewrite in response to a review is
-  its own kind of error.
-- **Declaring victory because it was a long effort.** Effort spent is not
-  quality achieved.
-- **Skipping the review because the change was small.** Small changes break
-  large things, and the review is cheapest when the diff is small.
+- **Relire pour confirmer plutôt que pour trouver.** Relire son propre travail en
+  cherchant une permission est la façon la plus courante que cette skill devienne
+  du théâtre.
+- **S'arrêter à la première passe.** La deuxième passe trouve ce que la première
+  n'a pas trouvé, parce que la première confirme encore.
+- **Ne tester que le chemin heureux.** C'est le chemin en lequel tu crois déjà.
+- **Prendre un test qui passe pour une preuve.** Un test prouve un cas, et
+  généralement celui auquel tu as pensé en l'écrivant.
+- **Réécrire au lieu de vérifier.** Une réécriture complète en réponse à une revue
+  est elle-même une erreur.
+- **Déclarer victoire parce que l'effort a été long.** L'effort fourni n'est pas
+  la qualité obtenue.
+- **Sauter la revue parce que le changement était petit.** Les petits changements
+  cassent de grandes choses, et la revue est moins chère quand le diff est petit.
 
-## Relationship to the other skills
+## Relation avec les autres skills
 
-**Interview** established the goal. **Doubt-driven-dev** governed the build. This
-skill attacks the result, which is a different posture and produces different
-findings: doubt-driven-dev catches wrong beliefs while they are still cheap,
-hostile-review catches the consequences of the beliefs that survived.
+**Interview** a établi le but. **Doubt-driven-dev** a gouverné la construction.
+Cette skill attaque le résultat, ce qui est une posture différente et produit des
+résultats différents : doubt-driven-dev intercepte de mauvaises croyances pendant
+qu'elles sont encore bon marché, hostile-review constate les conséquences de celles
+qui ont survécu.
 
-Then return to **doubt-driven-dev** to verify each fix, because a fix is new code
-carrying new assumptions, and those need checking too.
+Puis retourne à **doubt-driven-dev** pour vérifier chaque correction, car une
+correction est du nouveau code portant de nouvelles hypothèses, et celles-ci
+demandent à être vérifiées aussi.

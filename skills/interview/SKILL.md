@@ -2,9 +2,10 @@
 name: interview
 version: 1.0.0
 description: |
-  Conduct a thorough interview before writing any code. Understand the problem,
-  challenge the requester's assumptions, explore what already exists, and refuse
-  to start until the important unknowns are resolved.
+  Mener un entretien approfondi avant d'écrire la moindre ligne de code.
+  Comprendre le problème, contester les hypothèses de la demande, explorer ce
+  qui existe déjà, et refuser de commencer tant que les inconnues importantes ne
+  sont pas levées.
 license: ISC
 compatibility: claude-code opencode
 allowed-tools:
@@ -16,145 +17,154 @@ allowed-tools:
   - WebFetch
 ---
 
-# Skill: Interview Before Building
+# Skill : Interviewer avant de construire
 
-This skill runs **before** any implementation. Its purpose is to make sure you
-understand the problem well enough that building the wrong thing is no longer a
-possible outcome.
+Cette skill s'exécute **avant** toute implémentation. Son but est de garantir que
+tu comprends le problème suffisamment bien pour que construire la mauvaise
+chose ne soit plus possible.
 
-A tempting failure mode is to read a request, form an immediate plan, and start
-editing. That is fast, it feels productive, and it is how you end up three steps
-later having solved a problem nobody had.
+Un mode d'échec tentant consiste à lire une demande, à former un plan
+immédiatement, et à se mettre à éditer. C'est rapide, cela semble productif, et
+c'est ainsi qu'on se retrouve trois étapes plus loin ayant résolu un problème que
+personne n'avait.
 
-## When to use this skill
+## Quand utiliser cette skill
 
-Use it whenever a request involves any of the following:
+Use-la dès qu'une demande implique l'un des cas suivants :
 
-- a change to existing behaviour rather than something wholly new;
-- more than one plausible reading of what was asked;
-- anything touching data that matters, money, credentials, or user-visible output;
-- any request where you notice yourself thinking "obviously" or "just";
-- a bug report, because the description is a hypothesis, not a diagnosis;
-- a request whose vocabulary you do not recognise.
+- une modification d'un comportement existant plutôt qu'une création ;
+- plus d'une lecture possible de ce qui a été demandé ;
+- tout ce qui touche des données importantes, de l'argent, des identifiants, ou
+  une sortie visible par l'utilisateur ;
+- toute demande où tu te surprends à penser « évidemment » ou « juste » ;
+- un rapport de bug, car la description est une hypothèse, pas un diagnostic ;
+- une demande dont le vocabulaire tu ne reconnais pas.
 
-Skip it only for genuinely mechanical work, such as renaming a variable you just
-introduced or running a command whose output you can simply read. If you are
-unsure whether a task is mechanical, it is not.
+Ne la saute que pour du travail réellement mécanique, par exemple renommer une
+variable que tu viens d'introduire, ou exécuter une commande dont tu peux
+simplement lire la sortie. Si tu hésites sur le caractère mécanique d'une tâche,
+elle ne l'est pas.
 
-## What to do
+## Que faire
 
-### 1. Restate the request in your own words
+### 1. Reformuler la demande avec tes propres mots
 
-Write, briefly, what you believe is being asked. Not a paraphrase of the user's
-wording, a statement of the goal in your own terms. Include what success looks
-like and what is explicitly out of scope.
+Écris brièvement ce que tu crois qui est demandé. Pas une paraphrase des mots de
+l'utilisateur, mais l'énoncé du but avec tes propres termes. Inclus ce que la
+réussite ressemble et ce qui est explicitement hors périmètre.
 
-This step catches the most common failure: a request that reads one way and means
-another. If your restatement surprises you, that is a signal to ask.
+Cette étape attrape le mode d'échec le plus fréquent : une demande qui se lit
+d'une façon et en signifie une autre. Si ta reformulation te surprend, c'est un
+signal pour poser une question.
 
-### 2. Explore before you ask
+### 2. Explorer avant de demander
 
-Do not open with questions. Explore first, because you may already have the
-answer, and questions you could have answered yourself are noise.
+N'ouvre pas sur des questions. Explore d'abord, tu as peut-être déjà la réponse,
+et les questions auxquelles tu pouvais répondre toi-même sont du bruit.
 
-- Read the files the change would touch.
-- Search for the same functionality elsewhere. It is often already implemented.
-- Read the configuration, the tests, the documentation.
-- Check git history for prior attempts at the same thing.
-- Check the dependency list before assuming a new package is needed.
+- Lis les fichiers que la modification toucherait.
+- Cherche la même fonctionnalité ailleurs. Elle est souvent déjà implémentée.
+- Lis la configuration, les tests, la documentation.
+- Regarde l'historique git pour d'éventuelles tentatives antérieures.
+- Vérifie la liste des dépendances avant de supposer qu'un nouveau paquet est
+  nécessaire.
 
-If the request sounds familiar, that is not proof. The failure is not building
-something that exists, it is building a second incompatible copy of it.
+Si une demande te semble familière, ce n'est pas une preuve. L'échec n'est pas de
+construire ce qui existe déjà, c'est d'en produire une seconde copie incompatible.
 
-You can delegate this to a sub-agent when the search space is large and the
-relevant area is separable from the rest of the problem. A sub-agent is useful
-for breadth, not for deciding what matters.
+Tu peux déléguer cette exploration à un sous-agent quand l'espace de recherche est
+large et la zone pertinente séparable du reste du problème. Un sous-agent est
+utile pour la largeur, pas pour décider de ce qui compte.
 
-### 3. Separate what you know from what you are guessing
+### 3. Séparer ce que tu sais de ce que tu supposes
 
-Write down the actual assumptions your plan depends on. An assumption is any
-statement you have not verified but are treating as true. "The user probably
-wants X" is an assumption. "The function signature is Y" is an assumption until
-you read it.
+Écris les hypothèses dont ton plan dépend réellement. Une hypothèse est
+n'importe quelle affirmation que tu n'as pas vérifiée mais que tu traites comme
+vraie. « L'utilisateur veut probablement X » est une hypothèse. « La signature
+de la fonction est Y » est une hypothèse jusqu'à ce que tu l'aies lue.
 
-Mark each one as verified or unverified. Most plans collapse if two or three of
-them are wrong, so this is where to spend your attention.
+Marque chacune comme vérifiée ou non. La plupart des plans s'effondrent si deux
+ou trois sont fausses, c'est donc là qu'il faut concentrer ton attention.
 
-### 4. Ask about the material unknowns
+### 4. Poser des questions sur les inconnues déterminantes
 
-Ask only about things that would change what you build. A good question is one
-where both possible answers lead to different code.
+Ne questionne que ce qui changerait ce que tu construis. Une bonne question est
+celle dont les deux réponses possibles mènent à un code différent.
 
-Ask about:
+Interroge sur :
 
-- the goal behind the request, when the request is a proposed solution;
-- scope boundaries, what is explicitly not wanted;
-- information you could not obtain yourself;
-- decisions with a trade-off the user should make;
-- anything where you noticed a wrong premise.
+- l'objectif derrière la demande, quand la demande est une solution proposée ;
+- les limites de périmètre, ce qui n'est pas voulu explicitement ;
+- les informations que tu n'as pas pu obtenir toi-même ;
+- les décisions qui comportent un compromis que l'utilisateur devrait trancher ;
+- tout ce où tu as remarqué une prémisse fausse.
 
-Batch your questions. Three questions in one message beat three rounds of one.
+Regroupe tes questions. Trois questions dans un seul message valent mieux que
+trois tours d'une seule.
 
-Do not ask about things the user has no way of knowing better than you, such as
-what their own codebase contains. Investigate those.
+Ne pose pas de questions sur ce que l'utilisateur ne peut pas savoir mieux que
+toi, comme le contenu de son propre dépôt. Enquête sur ces points.
 
-### 5. Challenge the request
+### 5. Contester la demande
 
-This is the part most often skipped, and the part that saves the most time.
+C'est la partie le plus souvent sautée, et celle qui fait gagner le plus de
+temps.
 
-When a stated goal looks wrong, incomplete, or built on an untested assumption,
-say so directly. Specifically:
+Quand un objectif énoncé paraît faux, incomplet ou bâti sur une hypothèse non
+vérifiée, dis-le directement. En particulier :
 
-- If a requested fix would treat a symptom, point at the cause.
-- If a requested approach is known to fail in the conditions present, say it.
-- If a request contradicts something you observed, state the observation.
-- If the goal would be better served by something simpler, propose it.
+- Si une correction demandée ne traiterait qu'un symptôme, désigne la cause.
+- Si l'approche demandée échoue dans les conditions présentes, dis-le.
+- Si la demande contredit quelque chose que tu as observé, énonce l'observation.
+- Si le but serait mieux servi par quelque chose de plus simple, propose-le.
 
-The challenge must be about the work, not the person. "That will fail because the
-connection is closed before the write completes" is useful. "You should know that
-this API does not work like that" is not.
+La contestation porte sur le travail, pas sur la personne. « Cela échouera parce
+que la connexion est fermée avant l'écriture » est utile. « Vous devriez savoir
+que cette API ne fonctionne pas comme ça » ne l'est pas.
 
-The interface message of this skill is a question you must not answer yourself:
-"how would you do that?". The user's answer is about a part of the request you
-had not understood. Almost every ambiguity in a task shows up here.
+L'interface de cette skill est une question à laquelle tu ne dois pas répondre
+toi-même : « how would you do that? ». La réponse de l'utilisateur porte sur une
+partie de la demande que tu n'avais pas comprise. Presque toute ambiguïté d'une
+tâche se manifeste ici.
 
-Do not be agreeable for the sake of it. Agreement is not collaboration. If a
-request cannot be done, or would be a bad idea, the useful response is to say so
-before writing anything.
+Ne sois pas d'accord pour être agréable. L'accord n'est pas de la collaboration.
+Si une demande ne peut pas être faite, ou serait une mauvaise idée, la réponse
+utile consiste à le dire avant d'écrire quoi que ce soit.
 
-## When you are done
+## Quand tu as terminé
 
-You have enough to start when:
+Tu as assez pour commencer quand :
 
-- you can state the goal, and the success criterion, in one sentence each;
-- the material unknowns are answered or explicitly deferred by the user;
-- the assumptions your plan rests on are written down and marked;
-- you have looked for existing implementations and did not find a better one;
-- you have raised any concern about the direction, and the user has heard it.
+- tu peux énoncer le but et le critère de réussite en une phrase chacun ;
+- les inconnues déterminantes sont répondues ou explicitement différées ;
+- les hypothèses dont ton plan dépend sont écrites et marquées ;
+- tu as cherché les implémentations existantes sans rien trouver de meilleur ;
+- tu as soulevé toute réserve sur la direction, et l'utilisateur l'a entendue.
 
-If you are still uneasy, ask one more question. Interrupting to ask is cheaper
-than building the wrong thing.
+Si tu restes mal à l'aise, pose encore une question. Interrompre pour demander coûte
+moins cher que construire la mauvaise chose.
 
-## Errors to avoid
+## Erreurs à éviter
 
-- **Starting to code while uneasy.** The urge to produce something is not
-  evidence that you should. It is a bias toward visible progress.
-- **Asking what you could look up.** This shifts work onto the user for no
-  reason.
-- **Accepting the first framing.** Requests are often proposed solutions to
-  problems the requester has not fully articulated. The proposal is data, not
-  the requirement.
-- **Exploring so long that nothing ships.** Exploration has a budget. When you
-  have the goal, the constraints, and the non-goals, stop and build.
-- **Agreeing to a bad plan because it was requested.** Politeness here is a
-  technical debt instrument.
-- **Inferring intent from one sentence and building a whole system on it.**
+- **Commencer à coder en étant mal à l'aise.** L'envie de produire quelque chose
+  n'est pas une preuve qu'il le faut. C'est un biais vers le progrès visible.
+- **Demander ce que tu pourrais consulter toi-même.** Cela transfère du travail à
+  l'utilisateur sans raison.
+- **Accepter le cadrage initial.** Les demandes sont souvent des solutions
+  proposées à des problèmes que le demandeur n'a pas entièrement formulés. La
+  proposition est une donnée, pas le besoin.
+- **Explorer si longtemps que rien ne sort.** L'exploration a un budget. Quand tu
+  as le but, les contraintes et le hors-périmètre, arrête-toi et construis.
+- **Accepter un mauvais plan parce qu'il a été demandé.** La politesse ici est un
+  instrument d'endettement technique.
+- **Déduire l'intention d'une seule phrase et bâtir tout un système dessus.**
 
-## Relationship to the other skills
+## Relation avec les autres skills
 
-This skill is a phase. Once you understand the problem, move to
-**doubt-driven-dev**, which governs how you work while building. After a first
-solution exists, **hostile-review** takes over to try to break it.
+Cette skill est une phase. Une fois le problème compris, passe à
+**doubt-driven-dev**, qui régit ta façon de travailler pendant la construction.
+Après qu'une solution existe, **hostile-review** prend le relais pour tenter de
+la casser.
 
-The three form a cycle: interview, doubt-driven-dev, hostile-review, and back to
-doubt-driven-dev for whatever the review surfaced.
+Les trois forment un cycle : interview, doubt-driven-dev, hostile-review, puis
+retour à doubt-driven-dev pour tout ce que la revue a fait remonter.

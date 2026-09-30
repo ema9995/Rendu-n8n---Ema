@@ -2,10 +2,10 @@
 name: doubt-driven-dev
 version: 1.0.0
 description: |
-  A working method, not an end-of-task review. Throughout development, identify
-  assumptions, separate verified facts from guesses, seek evidence, and never
-  build on top of an unverified belief. Use continuously, from the first line
-  written to the last.
+  Une méthode de travail continue, pas une relecture de fin de tâche. Pendant tout
+  le développement, identifier les hypothèses, séparer les faits vérifiés des
+  suppositions, chercher des preuves, et ne jamais construire sur une croyance
+  non vérifiée. À utiliser en continu, de la première à la dernière ligne.
 license: ISC
 compatibility: claude-code opencode
 allowed-tools:
@@ -20,148 +20,154 @@ allowed-tools:
   - AskUserQuestion
 ---
 
-# Skill: Doubt-Driven Development
+# Skill : Développement guidé par le doute
 
-This skill is not a phase. It runs continuously, underneath everything, from the
-first line you write to the last. The question it keeps asking is simple:
+Cette skill n'est pas une phase. Elle tourne en continu, sous tout le reste, de la
+première ligne écrite à la dernière. La question qu'elle pose sans cesse est simple :
 
-> "I think X is true, but I have not verified it. What would it take to verify X,
-> and am I building on it?"
+> « Je pense que X est vrai, mais je ne l'ai pas vérifié. Que faudrait-il pour
+> vérifier X, et est-ce que je construis là-dessus ? »
 
-The failure this prevents is specific and common. You form a belief, the belief
-turns out to be wrong, and the wrongness has already been encoded into a
-structure that took effort to build. The cost is not the correction, it is the
-work built on top of the error.
+L'échec qu'elle évite est précis et fréquent. Tu formes une croyance, la croyance
+se révèle fausse, et la fausseté a déjà été encodée dans une structure qui a coûté
+des efforts. Le coût n'est pas la correction, c'est le travail bâti par-dessus
+l'erreur.
 
-## The core distinction
+## La distinction centrale
 
-Sort every claim into one of three categories, constantly, not once at the end:
+Classe chaque affirmation dans l'une des trois catégories, sans cesse, pas une
+seule fois à la fin :
 
-- **Verified.** You ran it, read it, or the tool confirmed it. You can say what
-  the evidence was.
-- **Inferred.** Strong reasoning, no direct evidence. Plausible, not known.
-- **Assumed.** You filled a gap because something was needed to continue.
+- **Vérifiée.** Tu l'as exécutée, lue, ou un outil l'a confirmée. Tu peux dire
+  quelle était la preuve.
+- **Déduite.** Raisonnement solide, sans preuve directe. Plausible, pas connu.
+- **Supposée.** Tu as comblé un trou parce qu'il fallait continuer.
 
-Only the first category is a foundation. The second is usable when you flag it.
-The third is a debt, and it accrues interest silently.
+Seule la première catégorie est une fondation. La deuxième est utilisable quand
+tu la signales. La troisième est une dette, et elle porte intérêt en silence.
 
-A claim like "this endpoint returns a 404 without auth" is verified only if you
-made the call. Reasoning about what an API probably does does not verify it.
-This distinction is the whole skill.
+Une affirmation comme « cette URL renvoie un 404 sans authentification » n'est
+vérifiée que si tu as fait l'appel. Raisonner sur ce qu'une API fait probablement
+ne vérifie rien. Cette distinction est toute la skill.
 
-## The sentence to say out loud
+## La phrase à prononcer
 
-**"I think X is true, but I have not verified it."**
+**« Je pense que X est vrai, mais je ne l'ai pas vérifié. »**
 
-Then either verify X, or state clearly that you are proceeding on an assumption
-and name the risk. Both are acceptable. Quietly building as if it were verified
-is not.
+Puis soit vérifier X, soit dire clairement que tu procèdes sur une hypothèse et
+nommer le risque. Les deux sont acceptables. Construire en silence comme si c'était
+vérifié ne l'est pas.
 
-This sentence is the tool. Its value is not humility, it is that it forces the
-next step to be evidence rather than more confident prose.
+Cette phrase est l'outil. Sa valeur n'est pas l'humilité, elle est qu'elle oblige
+l'étape suivante à être une preuve plutôt que de la prose plus assurée.
 
-## How to work
+## Comment travailler
 
-### Before each significant step
+### Avant chaque étape significative
 
-Ask three questions:
+Pose trois questions :
 
-1. What am I assuming here that I have not checked?
-2. Is there a cheaper way to check it than to find out it was wrong later?
-3. If this assumption is wrong, how much work gets thrown away?
+1. Qu'est-ce que je suppose ici sans l'avoir vérifié ?
+2. Y a-t-il un moyen moins coûteux de le vérifier que de découvrir plus tard que
+   j'avais tort ?
+3. Si cette hypothèse est fausse, combien de travail part à la poubelle ?
 
-The third question is the useful one. High blast radius deserves high
-verification effort, not the other way around.
+La troisième est la plus utile. Un rayon d'impact élevé mérite une vérification
+élevée, et non l'inverse.
 
-### Verify proportionally to consequence
+### Vérifier proportionnellement aux conséquences
 
-Not everything deserves the same effort. A wrong import statement costs a
-compile error. A wrong assumption about a data format, an API contract, or a
-user's intent can cost silently, which is worse because nothing announces it.
+Tout ne mérite pas le même effort. Une instruction d'import erronée coûte une
+erreur de compilation. Une hypothèse fausse sur un format de données, un contrat
+d'API, ou l'intention d'un utilisateur peut coûter en silence, ce qui est pire
+parce que rien ne le signale.
 
-Spend verification effort where failure is **silent**. A test that crashes tells
-you it is wrong. A parser that quietly returns an empty result on malformed input
-tells you nothing, and that asymmetry should drive where you look.
+Concentre l'effort là où l'échec est **silencieux**. Un test qui plante te dit
+qu'il est faux. Un parseur qui renvoie silencieusement un résultat vide sur une
+entrée malformée ne dit rien, et cette asymétrie doit guider là où tu regardes.
 
-### Prefer the source over the summary
+### Privilégier la source sur le résumé
 
-- An API's own response beats a description of that response.
-- Reading the code beats reasoning about what the code probably does.
-- Running the test beats predicting the test result.
-- The documentation for the installed version beats your memory of it.
+- La réponse propre d'une API vaut mieux que sa description.
+- Lire le code vaut mieux que raisonner sur ce qu'il fait probablement.
+- Exécuter le test vaut mieux que prédire son résultat.
+- La documentation de la version installée vaut mieux que ton souvenir.
 
-Your training data contains plausible statements about code that is now
-different, and about APIs that have since changed. Reasoning from memory is
-sometimes fine, and you should notice when you are doing it.
+Tes données d'entraînement contiennent des affirmations plausibles sur du code
+qui a changé depuis, et sur des API qui ont évolué. Raisonner de mémoire est
+parfois acceptable, et tu dois remarquer quand tu le fais.
 
-### Keep a running list
+### Tenir une liste vivante
 
-Maintain a short, live list of what you believe and how confident you are. It
-does not need to be a document. Three lines in your head, or in a scratch note,
-is enough to stop a belief from quietly hardening into a decision.
+Maintiens une liste courte et à jour de ce que tu crois et de ton degré de
+confiance. Ce n'est pas besoin d'être un document. Trois lignes dans ta tête
+suffisent à empêcher une croyance de durcir discrètement en décision.
 
-Revisit it when the direction changes. Some belief you have held quietly for an
-hour is probably still unverified, and it is probably load-bearing.
+Reviens dessus quand l'orientation change. Une croyance tenue discrètement depuis
+une heure est probablement toujours non vérifiée, et elle porte probablement de
+la charge.
 
-### Say when you are guessing
+### Dire quand tu devines
 
-When you proceed on an assumption, make it visible: in the code as a comment, in
-the message to the user, or both. An unstated assumption found later reads as a
-hidden bug. A stated one reads as a known risk, which is a completely different
-thing to hand over.
+Quand tu procèdes sur une hypothèse, rends-la visible : dans le code en
+commentaire, dans le message à l'utilisateur, ou les deux. Une hypothèse non
+énoncée découverte plus tard se lit comme un bug caché. Une hypothèse énoncée se
+lit comme un risque connu, ce qui est une tout autre chose à transmettre.
 
-## When you detect uncertainty
+## Quand tu détectes une incertitude
 
-Do not resolve it by picking the more likely answer and moving on. That is the
-default failure. Instead:
+Ne la résous pas en choisissant la réponse la plus probable et en continuant. C'est
+l'échec par défaut. À la place :
 
-1. **Can you verify it yourself?** Do that. Read the file, run the command, call
-   the API, grep for the usage.
-2. **Is verification expensive relative to the risk?** If not, verify anyway.
-3. **Is it genuinely unknowable from here?** Then say so, state the assumption,
-   name the consequence if you are wrong, and ask.
-4. **Delegate if it is separable.** A sub-agent can verify a bounded question
-   in parallel. Give it a precise question, not a vague one.
+1. **Peux-tu la vérifier toi-même ?** Fais-le. Lis le fichier, exécute la
+   commande, appelle l'API, cherche les usages.
+2. **La vérification est-elle peu coûteuse au regard du risque ?** Si non,
+   vérifie quand même.
+3. **Est-elle réellement inconnaissable d'ici ?** Alors dis-le, énonce
+   l'hypothèse, nomme la conséquence si tu te trompes, et demande.
+4. **Délègue si c'est séparable.** Un sous-agent peut vérifier une question
+   bornée en parallèle. Donne-lui une question précise, pas vague.
 
-The discipline is in the second and third cases. Both feel like slow progress.
-They are the difference between a working system and a plausible one.
+La discipline est dans les deuxième et troisième cas. Les deux donnent l'impression
+d'une lenteur. Ils sont la différence entre un système qui marche et un système
+plausible.
 
-## Continuous self-criticism
+## Autocritique continue
 
-Not at the end, throughout. When you are mid-task, periodically ask:
+Pas à la fin, tout au long. Quand tu es en pleine tâche, demande périodiquement :
 
-- Am I solving the problem I was asked, or the one I found interesting?
-- Have I changed a design decision without noticing I was relying on it?
-- Did I just treat a successful command as proof the feature works?
-- Is there a piece of this I have been avoiding because it might be inconvenient?
+- Est-ce que je résous le problème demandé, ou celui que j'ai trouvé intéressant ?
+- Ai-je changé une décision de conception sans remarquer que je m'appuyais dessus ?
+- Vient-je de prendre une commande réussie pour la preuve que ça marche ?
+- Y a-t-il une partie que j'évite parce qu'elle serait gênante ?
 
-The last one matters. Tasks that are hard to verify are exactly the ones where
-confidence is most likely to be misplaced.
+Le dernier compte. Les tâches difficiles à vérifier sont précisément celles où la
+confiance est la plus mal placée.
 
-## Errors to avoid
+## Erreurs à éviter
 
-- **Fluency mistaken for accuracy.** A confident, well-formed explanation of
-  something wrong is still wrong, and it is more dangerous than an obviously
-  broken one.
-- **Accepting your own earlier conclusion.** Your prior reasoning is not
-  evidence, no matter how sound it seemed.
-- **Verifying only what you built.** The parts you did not touch are where
-  regressions live.
-- **Testing one case and generalising.** A single green path says nothing about
-  the case you did not try.
-- **Citing a source without reading it.** If you did not read it, you do not know
-  what it says, and neither does the user.
-- **Mistaking absence of error for absence of problem.**
-- **Letting the code define the requirements.** If the code does something
-  surprising, the interesting question is why, not whether the new code matches
-  it.
+- **Confondre aisance et exactitude.** Une explication bien formulée et fausse
+  reste fausse, et elle est plus dangereuse qu'une chose manifestement cassée.
+- **Accepter sa propre conclusion antérieure.** Ton raisonnement passé n'est pas
+  une preuve, quelle qu'ait été sa solidité.
+- **Ne vérifier que ce que tu as construit.** Ce que tu n'as pas touché, c'est
+  là que vivent les régressions.
+- **Tester un cas et généraliser.** Un seul chemin vert ne dit rien du cas que tu
+  n'as pas essayé.
+- **Citer une source sans l'avoir lue.** Si tu ne l'as pas lue, tu ne sais pas ce
+  qu'elle dit, et l'utilisateur non plus.
+- **Prendre l'absence d'erreur pour l'absence de problème.**
+- **Laisser le code définir les exigences.** Si le code fait quelque chose de
+  surprenant, la question intéressante est pourquoi, pas si le nouveau code
+  correspond.
 
-## Relationship to the other skills
+## Relation avec les autres skills
 
-**Interview** happens first, to establish the goal and surface the unknowns.
-**This skill** then governs every step of the build, checking assumptions as you
-go. **Hostile-review** takes a finished first solution and tries to break it.
+**Interview** vient d'abord, pour établir le but et faire remonter les inconnues.
+**Cette skill** régit ensuite chaque étape de la construction, vérifiant les
+hypothèses au fil de l'eau. **Hostile-review** prend une première solution
+terminée et tente de la casser.
 
-The cycle is: interview, then doubt-driven-dev, then hostile-review, then back
-to doubt-driven-dev to fix whatever the review found and to re-check whatever
-the fix assumed.
+Le cycle est : interview, puis doubt-driven-dev, puis hostile-review, puis retour
+à doubt-driven-dev pour corriger ce que la revue a trouvé et revérifier ce que la
+correction a supposé.
