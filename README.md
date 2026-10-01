@@ -1,6 +1,19 @@
-# Trajets du matin
+# Workflows n8n
 
-Workflows n8n de récapitulatif de trajet, gérés comme du code avec [n8ncli](https://www.npmjs.com/package/@workflows-accelerator/n8n-cli).
+Deux workflows n8n gérés comme du code avec [n8ncli](https://www.npmjs.com/package/@workflows-accelerator/n8n-cli).
+
+| Dossier | Workflow | Rôle |
+| --- | --- | --- |
+| `Assistant de Trajet/` | `Assistant de Trajet - Recapitulatif Matinal` | Chaque matin, un email dit s'il faut partir plus tôt pour le trajet domicile-gare |
+| `bibliothèque de livres interrogeable par chat/` | `Chat livre` | Indexe des PDF dans Supabase et répond à des questions sur leur contenu |
+
+Ils n'ont rien à voir entre eux : pas de déclencheur commun, pas de table
+partagée, pas de credential commune. Ce sont deux projets qui cohabitent dans le
+même dépôt.
+
+---
+
+# Assistant de Trajet
 
 Chaque matin, un email résume l'état des transports sur le trajet domicile-travail
 et la météo au départ, pour décider s'il faut partir plus tôt.
@@ -14,7 +27,7 @@ votre attention.
 Il se déclenche si **au moins une** de ces conditions est vraie :
 
 - une **perturbation annoncée** sur le RER B (incident, travaux), déclarée par
-  l'exploiteur via l'API IDFM ;
+  l'exploitant via l'API IDFM ;
 - un **retard d'au moins 10 minutes** constaté sur un train au départ.
 
 Un simple retard de quelques minutes ne déclenche rien, sinon le mail partirait
@@ -100,6 +113,141 @@ conception, pas une transcription du cahier des charges d'origine. Le seuil est
 codé en dur dans le nœud `Analyse Trajet`, il n'est pas dans les variables du
 workflow.
 
+---
+
+# Chat livre
+
+Une bibliothèque de livres interrogeable par chat. On dépose un PDF, il est
+nettoyé, découpé **par chapitre**, vectorisé et rangé dans Supabase. Ensuite on
+pose une question et Gemini répond en s'appuyant uniquement sur les extraits
+trouvés.
+
+## Les trois chemins
+
+Le workflow contient trois chemins, avec trois points d'entrée distincts.
+
+### 1. Indexation
+
+`On form submission` → `Extract from File` → `Edit Fields` → `Clean` → `Chunking` → `Limit` → `Call 'RAG Livre 2 Chunking'`
+
+Le formulaire demande un titre de livre et un PDF. `Extract from File` en sort le
+texte, et son champ binaire est résolu dynamiquement, donc le nom du champ
+n'a pas d'importance.
+
+`Clean` normalise le texte : fins de ligne, caractères de contrôle, césures
+hyphenées (`((\w)-\n(\w)` devient `$1$2`), puis suppression des numéros de page
+isolés, des chiffres romains isolés, et des en-têtes courant, détectés comme des
+lignes courtes répétées cinq fois ou plus.
+
+`Chunking` fait le travail important : **un chunk par chapitre**. Un titre est
+reconnu s'il tient sur une ligne de 80 caractères maximum, s'il suit le motif
+`Chapter 3`, `Chapitre 3` ou `Part II`, ou s'il est entièrement en capitales. Sont
+ignorés les figures, tableaux, images et sources, ainsi que les lignes écrites en
+lettres espacées. Les sections de moins de 2 000 caractères sont fusionnées avec la
+suivante, et l'appareil critique (notes, bibliographie, index, glossaire, annexes)
+reste d'un seul bloc. Si aucune structure de chapitres n'est détectée, le nœud
+replie sur un découpage par taille.
+
+Chaque chunk sort avec son contenu et ses métadonnées : `chapter`, `chapterIndex`,
+`part`, `method`, `keywords`, plus le titre du livre.
+
+### 2. Sous-traitance de l'insertion
+
+`Chunking Trigger` → `Embed Chunks` → `Merge Chunks with Vectors` → `Insert Chunks with SQL Query`
+
+Ce chemin est déclenché par le dernier nœud du chemin 1, en mode `each` : un
+appel par chunk. `Embed Chunks` appelle Gemini `batchEmbedContents` en 1536
+dimensions. `Merge Chunks with Vectors` sérialise le vecteur et les métadonnées en
+JSON, parce que le pilote Postgres transformerait un tableau JavaScript brut en
+littéral de tableau et que le cast `::vector` le refuserait.
+
+L'insertion se fait en SQL, un `insert` préparé par chunk. Les colonnes `keywords`
+et `book` sont extraites du jsonb dans la même requête :
+
+```sql
+insert into documents_v2 (content, metadata, embedding, keywords, book)
+values ($1, $2::jsonb, $3::vector,
+        array(select jsonb_array_elements_text(coalesce($2::jsonb->'keywords', '[]'::jsonb))),
+        nullif($2::jsonb->>'book', ''))
+returning id;
+```
+
+### 3. Chat
+
+`When chat message received` → `Load History` → `List Books` → `Extract Question Keywords` → `Parse Keywords` → `Embed Question` → `Route and Search` → `Build Context` → `Generate Answer` → `Format Reply` → `Save History` → `Send Reply`
+
+`Load History` relit les huit derniers messages de la session, remit dans l'ordre.
+`List Books` liste les livres indexés, du plus récent au plus ancien.
+
+`Extract Question Keywords` est le nœud qui fait le travail de langage. Un appel
+Gemini à température 0 transforme le dernier message en question autonome, choisit
+le livre visé — celui que le message nomme, sinon le plus récent — et produit
+jusqu'à dix mots-clés, chacun donné **en anglais et en français**, sans mot vide.
+C'est ce qui permet de comprendre un « oui », « continue » ou « dis-moi en plus »
+en s'appuyant sur l'historique.
+
+`Route and Search` fait une recherche hybride, entièrement en SQL :
+
+```sql
+select id, content, metadata, book,
+  1 - (embedding <=> $1::vector) as similarity,
+  cardinality(array(select unnest(coalesce(keywords, '{}'))
+                    intersect select jsonb_array_elements_text($2::jsonb))) as keyword_hits
+from documents_v2
+where book = $3
+order by (embedding <=> $1::vector)
+         - 0.05 * cardinality(array(select unnest(coalesce(keywords, '{}'))
+                                     intersect select jsonb_array_elements_text($2::jsonb)))
+limit 6;
+```
+
+La similarité vectorielle fait l'ordre, et chaque mot-clé partagé avec la question
+bonifie le rang. Sans mot-clé, le bonus vaut zéro et la recherche est purement
+vectorielle. Le filtre `where book = $3` garantit que la réponse ne mélange jamais
+deux livres.
+
+`Build Context` formate chaque extrait en
+`[Extrait N | Livre : … | Chapitre : … | similarité …]`, puis `Generate Answer`
+répond à 0.3 avec un prompt qui interdit d'inventer et de signaler les limites des
+extraits. `Save History` enregistre le couple question-réponse pour le tour suivant.
+
+## Modèle de données
+
+Deux tables, sur la même base Supabase que le reste.
+
+**`documents_v2`** — les chunks indexés
+
+| Colonne | Type | Rôle |
+| --- | --- | --- |
+| `id` | `bigserial` | identifiant du chunk |
+| `content` | `text` | le texte du chapitre |
+| `metadata` | `jsonb` | chapitre, partie, méthode de découpe, mots-clés, titre |
+| `embedding` | `vector(1536)` | vecteur Gemini |
+| `keywords` | `text[]` | recherche hybride |
+| `book` | `text` | titre du livre |
+
+**`chat_history`** — l'historique, avec `session_id`, `role`, `content` et
+`created_at`.
+
+## Points de vigilance
+
+- **Le workflow s'appelle lui-même.** Le nœud `Call 'RAG Livre 2 Chunking'` pointe
+  vers l'ID `Abd2yYNGh1GHfMIR`, qui est celui du workflow lui-même. Le chemin 2 est
+  une entrée séparée, donc cela fonctionne, mais le nom affiché est périmé et la
+  configuration est fragile.
+- **La description du workflow est fausse** : elle parle encore de « chunking
+  sub-workflow ». La note sticky `What this sub-workflow owns` décrit elle aussi
+  une chaîne de cinq nœuds qui n'existe plus.
+- **`Limit` vaut 5.** Avec un découpage par chapitre, un livre de quarante
+  chapitres demande huit exécutions du formulaire.
+- **`Edit Fields` est vide**, c'est un nœud sans effet.
+- **Pas de déduplication.** Ré-uploader le même PDF stocke les chapitres une
+  seconde fois, et la recherche renvoie alors chaque extrait en double.
+- **`Embed Chunks` n'a pas de reprise automatique**, volontairement : une reprise
+  rejouerait tous les chapitres depuis le début et brûlerait le quota quotidien.
+
+---
+
 ## Structure
 
 ```
@@ -117,23 +265,10 @@ skills/
   hostile-review/       revue adversariale après une première solution
 ```
 
-Un dossier par projet, un workflow par fichier.
-
-`bibliothèque de livres interrogeable par chat` contient le workflow
-`Chat livre` : on y dépose un PDF, son texte est nettoyé puis découpé
-**par chapitre**, chaque chapitre est vectorisé et rangé dans Supabase
-(table `documents_v2`). Le chat reformule ensuite la question, choisit le
-livre visé, recherche par similarité vectorielle avec un bonus par mot-clé
-partagé, et Gemini répond en s'appuyant uniquement sur les extraits
-trouvés. L'historique de chaque session est stocké dans `chat_history`.
-
-`Assistant de Trajet` est le récapitulatif matinal du trajet
-domicile-gare, envoyé par email si le retard dépasse le seuil ou si le
-transporteur annonce une perturbation.
-
-Les workflows sont des fichiers TypeScript écrits avec le SDK officiel
-`@n8n/workflow-sdk`, pas du JSON. Ils sont lisibles et versionnables, et
-`n8ncli validate` les vérifie localement avant tout déploiement.
+Un dossier par projet, un workflow par fichier. Les workflows sont écrits en
+TypeScript avec le SDK officiel `@n8n/workflow-sdk`, pas en JSON : ils sont
+lisibles et versionnables, et `n8ncli validate` les vérifie localement avant tout
+déploiement.
 
 Les trois skills décrivent des méthodes de travail pour une IA : comprendre avant
 d'agir, vérifier pendant, et casser le résultat avant de le livrer.
@@ -160,12 +295,16 @@ n8ncli validate --lint     # vérification locale
 n8ncli push                # déploie sur l'instance
 ```
 
-## Modifier le workflow
+## Modifier un workflow
 
-Les réglages du trajet sont dans le nœud `Parametres du Trajet` : gare, ligne,
-destination, heure de départ, destinataire, coordonnées météo. La logique est
-dans le nœud `Analyse Trajet`, qui lit les sources par leur nom avec
-`$('Nom du nœud')` puis construit le HTML.
+Pour `Assistant de Trajet`, les réglages du trajet sont dans le nœud
+`Parametres du Trajet` : gare, ligne, destination, heure de départ,
+destinataire, coordonnées météo. La logique est dans le nœud `Analyse Trajet`,
+qui lit les sources par leur nom avec `$('Nom du nœud')` puis construit le HTML.
+
+Pour `Chat livre`, les réglages sont dans le nœud `Chunking` pour la découpe, et
+dans le prompt de `Extract Question Keywords` pour le choix du livre et la
+reformulation.
 
 Modifier dans n8n puis faire `n8ncli pull` pour rapatrier les changements, ou
 modifier ici puis `n8ncli push`. Attention, en mode MCP sans accès base de
