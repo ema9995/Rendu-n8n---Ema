@@ -105,7 +105,7 @@ workflow.
 ```
 Assistant de Trajet/
   Assistant de Trajet - Recapitulatif Matinal.workflow.ts
-Chat livre/
+bibliothèque de livres interrogeable par chat/
   Chat livre.workflow.ts
 config/
   n8n-cli.json        config du projet n8n cible
@@ -117,9 +117,19 @@ skills/
   hostile-review/       revue adversariale après une première solution
 ```
 
-Un dossier par projet, un workflow par fichier. `Chat livre` regroupe
-l'indexation et le dialogue sur une bibliothèque de livres ; `Assistant de
-Trajet` est le récapitulatif matinal du trajet domicile-gare.
+Un dossier par projet, un workflow par fichier.
+
+`bibliothèque de livres interrogeable par chat` contient le workflow
+`Chat livre` : on y dépose un PDF, son texte est nettoyé puis découpé
+**par chapitre**, chaque chapitre est vectorisé et rangé dans Supabase
+(table `documents_v2`). Le chat reformule ensuite la question, choisit le
+livre visé, recherche par similarité vectorielle avec un bonus par mot-clé
+partagé, et Gemini répond en s'appuyant uniquement sur les extraits
+trouvés. L'historique de chaque session est stocké dans `chat_history`.
+
+`Assistant de Trajet` est le récapitulatif matinal du trajet
+domicile-gare, envoyé par email si le retard dépasse le seuil ou si le
+transporteur annonce une perturbation.
 
 Les workflows sont des fichiers TypeScript écrits avec le SDK officiel
 `@n8n/workflow-sdk`, pas du JSON. Ils sont lisibles et versionnables, et
