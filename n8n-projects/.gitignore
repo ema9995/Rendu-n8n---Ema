@@ -1,0 +1,10 @@
+
+# n8ncli ignored files
+.env
+n8n/config/sync-state.json
+n8n/config/unconfigured-credentials.json
+n8n/config/workflow-folders.json
+n8n/references/
+
+# n8ncli build cache: duplicates of the workflows keyed by id, regenerated on every push
+n8n/config/cache/
