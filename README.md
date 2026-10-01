@@ -103,19 +103,23 @@ workflow.
 ## Structure
 
 ```
-n8n/
-  config/
-    n8n-cli.json        config du dépôt, projet n8n cible
-    n8n-standards.json  conventions de nommage et de style
-    n8n-layout.json     règles de positionnement des nœuds
-  workflows/
-    Sandbox/
-      Assistant de Trajet - Recapitulatif Matinal.workflow.ts
+Assistant de Trajet/
+  Assistant de Trajet - Recapitulatif Matinal.workflow.ts
+Chat livre/
+  Chat livre.workflow.ts
+config/
+  n8n-cli.json        config du projet n8n cible
+  n8n-standards.json  conventions de nommage et de style
+  n8n-layout.json     règles de positionnement des nœuds
 skills/
   interview/            phase d'interview avant développement
   doubt-driven-dev/     attitude de doute continue pendant le développement
   hostile-review/       revue adversariale après une première solution
 ```
+
+Un dossier par projet, un workflow par fichier. `Chat livre` regroupe
+l'indexation et le dialogue sur une bibliothèque de livres ; `Assistant de
+Trajet` est le récapitulatif matinal du trajet domicile-gare.
 
 Les workflows sont des fichiers TypeScript écrits avec le SDK officiel
 `@n8n/workflow-sdk`, pas du JSON. Ils sont lisibles et versionnables, et
